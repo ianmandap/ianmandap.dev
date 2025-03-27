@@ -1,3 +1,5 @@
+'use client'
+
 import siteMetadata from '@/data/siteMetadata'
 import headerNavLinks from '@/data/headerNavLinks'
 import Logo from '@/data/logo.svg'
@@ -5,9 +7,12 @@ import Link from './Link'
 import MobileNav from './MobileNav'
 import ThemeSwitch from './ThemeSwitch'
 import SearchButton from './SearchButton'
+import { usePathname } from 'next/navigation'
+import clsx from 'clsx'
 
 const Header = () => {
-  let headerClass = 'flex items-center w-full bg-white dark:bg-gray-950 justify-between py-10'
+  const pathname = usePathname()
+  let headerClass = 'flex items-center w-full bg-white dark:bg-gray-950 justify-between py-1'
   if (siteMetadata.stickyNav) {
     headerClass += ' sticky top-0 z-50'
   }
@@ -16,7 +21,7 @@ const Header = () => {
     <header className={headerClass}>
       <Link href="/" aria-label={siteMetadata.headerTitle}>
         <div className="flex items-center justify-between">
-          <div className="mr-3">
+          <div className="mr-1 h-24 w-24">
             <Logo />
           </div>
           {typeof siteMetadata.headerTitle === 'string' ? (
@@ -29,14 +34,17 @@ const Header = () => {
         </div>
       </Link>
       <div className="flex items-center space-x-4 leading-5 sm:-mr-6 sm:space-x-6">
-        <div className="no-scrollbar hidden max-w-40 items-center gap-x-4 overflow-x-auto sm:flex md:max-w-72 lg:max-w-96">
+        <div className="no-scrollbar hidden max-w-40 items-center gap-x-1 overflow-x-auto sm:flex md:max-w-72 lg:max-w-96">
           {headerNavLinks
             .filter((link) => link.href !== '/')
             .map((link) => (
               <Link
                 key={link.title}
                 href={link.href}
-                className="hover:text-primary-500 dark:hover:text-primary-400 m-1 font-medium text-gray-900 dark:text-gray-100"
+                className={clsx(
+                  'hover:text-primary-500 dark:hover:text-primary-400 m-1 rounded px-2 py-1 font-medium text-gray-900 dark:text-gray-100',
+                  pathname.startsWith(link.href) ? 'dark:bg-primary-700 bg-gray-300' : ''
+                )}
               >
                 {link.title}
               </Link>

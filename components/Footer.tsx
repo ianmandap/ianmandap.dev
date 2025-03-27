@@ -30,6 +30,7 @@ export default function Footer() {
           <Link href="https://github.com/timlrx/tailwind-nextjs-starter-blog">
             Tailwind Nextjs Theme
           </Link>
+          | <Link href="https://storyset.com/work">Logo by Storyset</Link>
         </div>
       </div>
     </footer>
