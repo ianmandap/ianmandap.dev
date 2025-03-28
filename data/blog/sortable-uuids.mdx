@@ -1,0 +1,52 @@
+---
+title: 'Sortable UUIDs'
+date: '2022-08-22'
+tags: ['rails', 'postgresql', 'incident-review']
+draft: false
+summary: 'A post-incident review of using Universally Unique Identifiers (UUIDs) as a primary key and its implicit ordering'
+---
+
+## Background Information
+
+At one of my projects, we were using UUIDs as a primary key for a `Foo` resource. We were serving 
+the resource with corresponding `page` and `per_page` parameters to consume it. Later, we've received
+a report that as a user went through the pages, they noticed duplicate records appearing.
+
+Upon investigation, it appears that the resource was implicitly ordered and since it was not *explicitly*
+ordered and that it was using UUIDs, the order returned by SQL was sorted *not* by their time component but
+by their memory layout<sup>[1]</sup>.
+
+## Implicit Ordering by Rails
+
+In our project, the `Foo` resource used the 
+<a href="https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema.html#method-c-implicit_order_column">`implicit_order_column`</a>:
+
+```rb
+class ApplicationRecord < ActiveRecord::Base
+  primary_abstract_class
+  self.implicit_order_column = 'created_at'
+end
+```
+
+It turns out, based on [a Github Issue on the above method](https://github.com/rails/rails/issues/44621), retriving all records of a resource (e.g. `Foo.all`) will
+not apply `implicit_order_column` because it is not an ordered finder call, since under the hood it executes
+`SELECT * FROM table`. 
+
+Only `#first` and `#last` methods are affected by the `implicit_order_column` since both methods
+order by primary key by default.
+
+
+## Explicit Ordering
+
+So since we needed to paginate the resource, our solution was to make an explicit ordered call to the resource `Foo.order(created_at: :asc)`.
+We also wanted to avoid using `default_scope order(created_at: :asc)` as if you needed to specify a different order, you'd have to
+chain a `#reorder` method.
+
+As another precaution, we added a compound index on the table based on `created_at` and `id`. This sorts by `created_at` first 
+and then by `id` so that records are ordered more predictably (i.e. when records have the same `created_at` they are then sorted by `id`).
+
+#### References
+- <sup>[1]</sup> https://stackoverflow.com/a/73822906
+- https://github.com/rails/rails/issues/44621
+- https://stackoverflow.com/a/30825837
+- https://web.archive.org/web/20140426154227/https://tomafro.net/2009/08/using-indexes-in-rails-choosing-additional-indexes
