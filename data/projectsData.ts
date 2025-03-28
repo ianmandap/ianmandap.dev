@@ -7,12 +7,12 @@ interface Project {
 
 const projectsData: Project[] = [
   {
-    title: 'A Search Engine',
-    description: `What if you could look up any information in the world? Webpages, images, videos
-    and more. Google has many features to help you find exactly what you're looking
-    for.`,
-    imgSrc: '/static/images/google.png',
-    // href: 'https://www.google.com',
+    title: 'Microblink - BlinkShelf',
+    description: `BlinkShelf lets users scan grocery items in real-time to detect product info down to the UPC level. 
+    As a Fullstack Web Developer, I created dashboards for effective data visualization and created APIs to facilitate
+    the communication between the back-end server, mobile devices, and machine learning algorithms`,
+    imgSrc: '/static/images/projects/Capture-images-of-grocery-shelves-1.webp',
+    href: 'https://microblink.com/products/ai-product-recognition/',
   },
 ]
 
