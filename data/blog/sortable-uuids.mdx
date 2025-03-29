@@ -14,23 +14,27 @@ a report that as a user went through the pages, they noticed duplicate records a
 
 Upon investigation, it appears that the resource was implicitly ordered and since it was not *explicitly*
 ordered and that it was using UUIDs, the order returned by SQL was sorted *not* by their time component but
-by their memory layout<sup>[1]</sup>.
+by their memory layout. [^footnote]
+
+[^footnote]: https://stackoverflow.com/a/73822906
 
 ## Implicit Ordering by Rails
 
-In our project, the `Foo` resource used the 
+The `Foo` resource used the 
 <a href="https://api.rubyonrails.org/classes/ActiveRecord/ModelSchema.html#method-c-implicit_order_column">`implicit_order_column`</a>:
 
-```rb
+```rb {3} showLineNumbers
 class ApplicationRecord < ActiveRecord::Base
   primary_abstract_class
   self.implicit_order_column = 'created_at'
 end
 ```
 
-It turns out, based on [a Github Issue on the above method](https://github.com/rails/rails/issues/44621), retriving all records of a resource (e.g. `Foo.all`) will
+It turns out, based on a Github Issue on the above method [^2], retriving all records of a resource (e.g. `Foo.all`) will
 not apply `implicit_order_column` because it is not an ordered finder call, since under the hood it executes
 `SELECT * FROM table`. 
+
+[^2]: https://github.com/rails/rails/issues/44621
 
 Only `#first` and `#last` methods are affected by the `implicit_order_column` since both methods
 order by primary key by default.
@@ -40,13 +44,11 @@ order by primary key by default.
 
 So since we needed to paginate the resource, our solution was to make an explicit ordered call to the resource `Foo.order(created_at: :asc)`.
 We also wanted to avoid using `default_scope order(created_at: :asc)` as if you needed to specify a different order, you'd have to
-chain a `#reorder` method.
+chain a `#reorder` method. [^3]
+
+[^3]: https://stackoverflow.com/a/30825837
 
 As another precaution, we added a compound index on the table based on `created_at` and `id`. This sorts by `created_at` first 
-and then by `id` so that records are ordered more predictably (i.e. when records have the same `created_at` they are then sorted by `id`).
+and then by `id` so that records are ordered more predictably (i.e. when records have the same `created_at` they are then sorted by `id`). [^4]
 
-#### References
-- <sup>[1]</sup> https://stackoverflow.com/a/73822906
-- https://github.com/rails/rails/issues/44621
-- https://stackoverflow.com/a/30825837
-- https://web.archive.org/web/20140426154227/https://tomafro.net/2009/08/using-indexes-in-rails-choosing-additional-indexes
+[^4]: https://web.archive.org/web/20140426154227/https://tomafro.net/2009/08/using-indexes-in-rails-choosing-additional-indexes
