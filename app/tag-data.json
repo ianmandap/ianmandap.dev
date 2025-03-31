@@ -1,5 +1,6 @@
 {
-  "rails": 1,
-  "postgresql": 1,
-  "incident-review": 1
+  "rails": 3,
+  "postgresql": 3,
+  "incident-review": 1,
+  "personal": 1
 }

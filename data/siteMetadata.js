@@ -3,7 +3,7 @@ const siteMetadata = {
   title: "Ian's Blog",
   author: 'Ian Mandap',
   headerTitle: "Ian's Blog",
-  description: "A blog of the things I've learned as a Tax Accountant turned Software Engineer",
+  description: "A blog of the interesting things I've learned as a Software Engineer",
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://ianmandap.vercel.app',

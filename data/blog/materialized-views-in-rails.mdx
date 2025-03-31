@@ -1,0 +1,111 @@
+---
+title: 'Materialized Views in Rails and PostgreSQL'
+date: '2023-04-19'
+lastmod: '2025-04-01'
+tags: ['rails', 'postgresql']
+draft: false
+summary: 'Utilizing Materialized Views for dashboards that had complex logic for displaying counts'
+---
+
+## Overview
+
+I had a project that needed several dashboards that had a lot of complex logic for displaying counts. Among other things,
+the dashboards needed to display a count of various resources in `total`, `previous_week`, and `current_week`. There was also 
+the possibility of this requirement changing (e.g. from weekly counts to monthly counts). In its first iteration, a raw SQL query 
+was used and resulted in up to 1 minute of response time leading to poor user experience.
+
+A counter cache solution [^footnote] was too simple since it didn't allow for the possibility of a change in time scope and complex 
+conditional logic for counts. So I looked into caching the raw SQL queries with Materialized Views.
+
+[^footnote]: https://thoughtbot.com/blog/what-is-counter-cache
+
+## Review of Terms
+
+A View is essentially a named query, that instead of typing out the query every time it's needed, you refer to the name of the view 
+over that query [^2]. Materialized Views are pretty much the same except it persists the results of the query in a table-like form 
+and cannot be directly updated [^3]. This means that access to the resulting data is fast since it's already cached but the data 
+is not always current since you would have to refresh the materialized view to re-query and get the latest data.
+
+[^2]: https://www.postgresql.org/docs/current/tutorial-views.html
+[^3]: https://www.postgresql.org/docs/current/rules-materializedviews.html
+
+## Technical Implementation
+
+With the foregoing info, I used the [scenic gem](https://github.com/scenic-views/scenic?tab=readme-ov-file#what-about-materialized-views) 
+to create the materialized views for PostgreSQL databases and installation was relatively straightforward.
+
+You generate a Materialized View backed by a Model:
+```bash
+$ rails generate scenic:model search_results --materialized
+      create  app/models/search_result.rb
+      create  db/views/search_results_v01.sql
+      create  db/migrate/[TIMESTAMP]_create_search_results.rb
+```
+
+This also gives us a Model to work with and gives us the following method for refreshes:
+```rb
+# app/models/foo.rb
+class Foo < ApplicationRecord
+  def self.refresh
+    Scenic.database.refresh_materialized_view(table_name, concurrently: true, cascade: false)
+  end
+end
+```
+
+Edit the `.sql` file and migrate:
+```bash
+$ rake db:migrate
+```
+
+As a side note, since the project needed to compute for weekly totals, I found that there were no PostgreSQL functions 
+available to readily compute a `previous_week` or `current_week` time range. As such, these were computed through 
+the use of the `date_trunc` function.
+
+SQL snippet of the time range computation:
+```sql
+-- previous = BETWEEN previous_week_beg AND previous_week_end
+-- current  = BETWEEN current_week_beg  AND current_week_end
+
+-- e.g. if timezone('utc', now()) is April 4, 2022 8pm +8 / 12nn +0
+-- select
+-- date_trunc('week', timezone('utc', now()) - '1 week'::interval) as previous_week_beg,
+-- date_trunc('week', timezone('utc', now())) - '1 microsecond'::interval as previous_week_end,
+-- date_trunc('week', timezone('utc', now())) as current_week_beg,
+-- date_trunc('day', timezone('utc', now()) + '1 day') as current_week_end; -- also equiv to tomorrow's beginning of day
+
+--   previous_week_beg  |     previous_week_end      |  current_week_beg   |  current_week_end
+-- ---------------------+----------------------------+---------------------+---------------------
+--  2022-03-28 00:00:00 | 2022-04-03 23:59:59.999999 | 2022-04-04 00:00:00 | 2022-04-05 00:00:00
+
+-- Note: timezone('utc', now()) is used instead of now()
+-- since now() function returns current date and time based on the database server's time zone setting.
+-- Note: BETWEEN is equivalent to a >= x AND a <= y (i.e. endpoints are included).
+```
+
+Any future changes to the SQL query would require you to re-generate the view with the same name and repeat the process:
+```bash
+$ rails generate scenic:view search_results --materialized
+      create  db/views/search_results_v02.sql
+      create  db/migrate/[TIMESTAMP]_update_search_results_to_version_2.rb
+```
+
+I also created a rake task to invoke the refresh.
+```rb
+# lib/tasks/refreshers.rake
+namespace :refreshers do
+  desc 'Refresh materialized view for Foo'
+  task foo: :environment do
+    Foo.refresh
+  end
+```
+
+And finally, scheduled a cron job that runs every 30 minutes (`*,30 * * * *`) [^4] [^5] to invoke the task.
+
+[^4]: https://crontab.guru/#*,30_*_*_*_*
+[^5]: https://stackoverflow.com/a/40695457
+
+## Conclusion
+
+Overall, even with the trade-off of not having the latest data, access to the cached result proved far more useful for users with the 
+disclaimer that the dashboard data refreshes in 30 minute increments. Implementing materialized views allowed us to cache 
+the expensive SQL calls and vastly improve the API's response time.

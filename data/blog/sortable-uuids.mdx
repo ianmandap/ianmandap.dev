@@ -1,9 +1,10 @@
 ---
 title: 'Sortable UUIDs'
 date: '2022-08-22'
+lastmod: '2025-04-01'
 tags: ['rails', 'postgresql', 'incident-review']
 draft: false
-summary: 'A post-incident review of using Universally Unique Identifiers (UUIDs) as a primary key and its implicit ordering'
+summary: 'A post-incident review of using Universally Unique Identifiers (UUIDs) as a primary key and its implicit ordering in Rails and PostgreSQL'
 ---
 
 ## Background Information
@@ -30,7 +31,7 @@ class ApplicationRecord < ActiveRecord::Base
 end
 ```
 
-It turns out, based on a Github Issue on the above method [^2], retriving all records of a resource (e.g. `Foo.all`) will
+It turns out, based on a Github Issue on the above method [^2], retrieving all records of a resource (e.g. `Foo.all`) will
 not apply `implicit_order_column` because it is not an ordered finder call, since under the hood it executes
 `SELECT * FROM table`. 
 
