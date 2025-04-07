@@ -1,7 +1,7 @@
 ---
 title: 'Materialized Views in Rails and PostgreSQL'
 date: '2023-04-19'
-lastmod: '2025-04-01'
+lastmod: '2025-04-07'
 tags: ['rails', 'postgresql']
 draft: false
 summary: 'Utilizing Materialized Views for dashboards that had complex logic for displaying counts'
@@ -61,28 +61,41 @@ As a side note, since the project needed to compute for weekly totals, I found t
 available to readily compute a `previous_week` or `current_week` time range. As such, these were computed through 
 the use of the `date_trunc` function.
 
-SQL snippet of the time range computation:
+SQL snippets:
 ```sql
--- previous = BETWEEN previous_week_beg AND previous_week_end
--- current  = BETWEEN current_week_beg  AND current_week_end
+-- snippet to see and verify correct computation of time range
+SELECT
+  date_trunc('week', timezone('utc', now()) - '1 week'::interval) AS previous_week_beg,
+  date_trunc('week', timezone('utc', now())) - '1 microsecond'::interval AS previous_week_end,
+  date_trunc('week', timezone('utc', now())) AS current_week_beg,
+  date_trunc('day', timezone('utc', now()) + '1 day') AS current_week_end;
 
 -- e.g. if timezone('utc', now()) is April 4, 2022 8pm +8 / 12nn +0
--- select
--- date_trunc('week', timezone('utc', now()) - '1 week'::interval) as previous_week_beg,
--- date_trunc('week', timezone('utc', now())) - '1 microsecond'::interval as previous_week_end,
--- date_trunc('week', timezone('utc', now())) as current_week_beg,
--- date_trunc('day', timezone('utc', now()) + '1 day') as current_week_end; -- also equiv to tomorrow's beginning of day
-
 --   previous_week_beg  |     previous_week_end      |  current_week_beg   |  current_week_end
 -- ---------------------+----------------------------+---------------------+---------------------
 --  2022-03-28 00:00:00 | 2022-04-03 23:59:59.999999 | 2022-04-04 00:00:00 | 2022-04-05 00:00:00
 
 -- Note: timezone('utc', now()) is used instead of now()
 -- since now() function returns current date and time based on the database server's time zone setting.
--- Note: BETWEEN is equivalent to a >= x AND a <= y (i.e. endpoints are included).
+-- Note: BETWEEN is equivalent to a >= x AND a <= y (i.e. endpoints are included)
+
+-- snippet of use
+-- previous_week
+SELECT COUNT(*)	
+FROM foo
+WHERE foo.created_at 
+  BETWEEN date_trunc('week', timezone('utc', now()) - '1 week'::interval) 
+  AND date_trunc('week', timezone('utc', now() - '1 microsecond'::interval))
+
+-- current_week
+SELECT COUNT(*)
+FROM foo
+WHERE foo.created_at
+  BETWEEN date_trunc('week', timezone('utc', now())) 
+  AND date_trunc('day', timezone('utc', now()) + '1 day')
 ```
 
-Any future changes to the SQL query would require you to re-generate the view with the same name and repeat the process:
+Then, any future changes to the SQL query would require you to re-generate the view with the same name and repeat the process:
 ```bash
 $ rails generate scenic:view search_results --materialized
       create  db/views/search_results_v02.sql
