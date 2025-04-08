@@ -1,0 +1,135 @@
+---
+title: 'JSON operations in Rails and PostgreSQL'
+date: '2023-01-10'
+lastmod: '2024-04-09'
+tags: ['rails', 'postgresql']
+draft: false
+summary: 'Understanding jsonb column in Rails and PostgreSQL and JSON operations to read and manipulate the data'
+---
+
+## Overview
+
+PostgreSQL allows you to store JSON data (JavaScript Object Notation) with two types `json` and `jsonb`. Both are almost 
+identical in that `json` stores an exact copy and requires reparsing while `jsonb` stores a special binary format that's significantly 
+faster to process since it does not need reparsing [^footnote]. `jsonb` is usually the preferred data type when dealing with 
+dynamic JSON data or when needing to perform JSON operations.
+
+[^footnote]: https://www.postgresql.org/docs/current/datatype-json.html
+
+In Rails, we can specify `json` or `jsonb` data types when creating tables for our postgreSQL database: [^2]
+```rb
+create_table :events do |t|
+  t.json "payload"
+end
+
+# or
+create_table :events do |t|
+  t.jsonb "payload"
+end
+```
+
+[^2]: https://guides.rubyonrails.org/active_record_postgresql.html#json-and-jsonb
+
+## Use Case
+
+In one of my projects, we used the JSON data type since the source data's structure kept changing. We would store the raw response 
+in the JSON column and would extract relevant info as necessary. Whenever the data structure changed, we could reparse the original 
+raw data as needed.
+
+I'll do an example with some data so this post can be used a quick reference for performing operations:
+```bash
+rails g model Payload data:jsonb
+```
+
+```rb
+class CreatePayload < ActiveRecord::Migration[8.0]
+  def change
+    create_table :payloads do |t|
+      t.jsonb :data
+
+      t.timestamps
+    end
+  end
+end
+```
+
+And some sample data:
+```rb
+# db/seeds.rb
+
+Payload.create(data: {
+  id: 1,
+  settings: { version: "1.0" },
+  userInfo: { username: 'zzyy998', email: 'zebra@mail.com' }
+})
+
+Payload.create(data: {
+  id: 2,
+  settings: { version: "1.0" },
+  userInfo: { username: 'aaa111', email: 'ant@mail.com', placesVisited: [] }
+})
+
+Payload.create(data: {
+  id: 3,
+  settings: { version: "1.1", mode: 'dark', cookies: 'true', details: { foo: 1, bar: 2 } },
+  userInfo: { username: 'bbb222', email: 'bee@example.com', placesVisited: [ "USA", "AUS", "CAN" ] }
+})
+```
+
+## JSON Operations
+
+### Overview
+The [PostgreSQL documentation on JSON operations](https://www.postgresql.org/docs/current/functions-json.html) can be 
+hard to understand so I'll do my best to outline code snippets for common use cases.
+
+As a quick guide, PostgreSQL provides the following native operators to query JSON data under Table 9.45: [^3] [^4]
+- `->` returns JSON object field as JSON type using a given key
+- `->>` returns JSON object field **as text** using a given key
+- `#>` for more nested operations, returns the JSON sub-object as JSON using a specified path, where elements are keys or array indexes
+- `#>>` for more nested operations, returns the JSON sub-objects **as text** using a specified path, where elements are keys or array indexes
+
+For our purposes, I'll be focusing on `#>>` since the syntax is straightforward and can be used for single or multiple nested data,
+and that we would want to return the result as `text` to apply proper `where` conditions.
+
+Also side note, the examples illustrated in the documentation explicitly type casts its input data as `json` using `::json` so 
+that json operations can be recognized and would work. In Rails, we don't have to 
+
+[^3]: https://stackoverflow.com/a/50717581
+[^4]: https://stackoverflow.com/questions/38777535/what-is-the-difference-between-and-in-postgres-sql
+
+### Reading JSON Data
+
+Example: Find all records that are `version = "1.0"` <br/>
+a. We can use `#>>` for a nested search:
+```rb
+Payload.where("data #>> '{settings, version}' = ?", "1.0")
+#=> returns an array containing ids 1 and 2
+```
+```sql
+-- equivalent SQL query using .to_sql
+SELECT "payloads".* FROM "payloads" WHERE (data #>> '{settings, version}' = '1.0')
+```
+
+Here, the syntax is straightforward: specify the json column and the path which we want to extract from.
+
+b. For comparison, we can also navigate our way down using the stabby operators:
+```rb
+# functionally equivalent as above
+Payload.where("data -> 'settings' ->> 'version' = ?", "1.0")
+```
+```sql
+-- equivalent SQL query using .to_sql
+SELECT "payloads".* FROM "payloads" WHERE (data -> 'settings' ->> 'version' = '1.0')
+```
+
+Here, from the json column, we extract the first JSON object (`settings`) and we return it as JSON (the use of `->`) so 
+we can continue to operate on it and then we provide a key and return it as text (`->> 'version'`) so our WHERE condition connects.
+
+Example 2: We can also indicate array indexes as part of our search, so to get all records with `USA` as their first `placesVisited`:
+```rb
+Payload.where("data #>> '{userInfo, placesVisited, 0}' = ?", "USA")
+```
+```sql
+-- equivalent SQL query using .to_sql
+SELECT "payloads".* FROM "payloads" WHERE (data #>> '{userInfo, placesVisited, 0}' = 'USA')
+```
