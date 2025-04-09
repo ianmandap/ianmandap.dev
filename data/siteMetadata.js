@@ -7,7 +7,7 @@ const siteMetadata = {
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://ianmandap.vercel.app',
-  siteRepo: 'https://github.com/ianmandap/ianmandap.dev',
+  siteRepo: 'https://github.com/ianmandap/blog',
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/logo.svg`,
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
   // mastodon: 'https://mastodon.social/@mastodonuser',
