@@ -22,7 +22,7 @@ const generateRssItem = (config, post) => `
 `
 
 const generateRss = (config, posts, page = 'feed.xml') => `
-  <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <rss version="2.0" xmlns:atom="https://www.w3.org/2005/Atom">
     <channel>
       <title>${escape(config.title)}</title>
       <link>${config.siteUrl}/blog</link>

@@ -14,7 +14,7 @@ import {
 
 const Sun = () => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
+    xmlns="https://www.w3.org/2000/svg"
     viewBox="0 0 20 20"
     fill="currentColor"
     className="group:hover:text-gray-100 h-6 w-6"
@@ -28,7 +28,7 @@ const Sun = () => (
 )
 const Moon = () => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
+    xmlns="https://www.w3.org/2000/svg"
     viewBox="0 0 20 20"
     fill="currentColor"
     className="group:hover:text-gray-100 h-6 w-6"
@@ -38,7 +38,7 @@ const Moon = () => (
 )
 const Monitor = () => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
+    xmlns="https://www.w3.org/2000/svg"
     viewBox="0 0 20 20"
     fill="none"
     stroke="currentColor"

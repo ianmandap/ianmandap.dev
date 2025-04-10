@@ -158,6 +158,16 @@ input:-webkit-autofill:focus {
   overflow: auto hidden;
 }
 
+/* offsets HTML anchor to adjust for fixed header */
+.content-header::before {
+  content: '';
+  display: block;
+  position: relative;
+  padding-top: 104px;
+  margin-top: -104px;
+  visibility: hidden;
+}
+
 .content-header-link {
   opacity: 0;
   margin-left: -24px;
