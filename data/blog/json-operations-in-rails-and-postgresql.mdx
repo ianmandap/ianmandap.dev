@@ -1,7 +1,7 @@
 ---
 title: 'JSON operations in Rails and PostgreSQL'
 date: '2023-01-10'
-lastmod: '2024-04-09'
+lastmod: '2024-04-10'
 tags: ['rails', 'postgresql']
 draft: false
 summary: 'Understanding jsonb column in Rails and PostgreSQL and JSON operations to read and manipulate the data'
@@ -36,7 +36,7 @@ In one of my projects, we used the JSON data type since the source data's struct
 in the JSON column and would extract relevant info as necessary. Whenever the data structure changed, we could reparse the original 
 raw data as needed.
 
-I'll do an example with some data so this post can be used a quick reference for performing operations:
+I'll do an example with some data so this blog post can be used a quick reference for performing operations:
 ```bash
 rails g model Payload data:jsonb
 ```

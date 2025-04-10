@@ -6,12 +6,12 @@ const siteMetadata = {
   description: "A blog of the interesting things I've learned as a Software Engineer",
   language: 'en-us',
   theme: 'system', // system, dark or light
-  siteUrl: 'https://ianmandap.vercel.app',
+  siteUrl: 'https://ianmandap.dev',
   siteRepo: 'https://github.com/ianmandap/blog',
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/logo.svg`,
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
   // mastodon: 'https://mastodon.social/@mastodonuser',
-  email: 'mandap.fmg@gmail.com',
+  email: 'hello@ianmandap.dev',
   github: 'https://github.com/ianmandap',
   // x: 'https://twitter.com/x',
   // twitter: 'https://twitter.com/Twitter',
@@ -61,16 +61,15 @@ const siteMetadata = {
     // https://vercel.com/docs/environment-variables
     provider: 'giscus', // supported providers: giscus, utterances, disqus
     giscusConfig: {
-      // Visit the link below, and follow the steps in the 'configuration' section
       // https://giscus.app/
       repo: process.env.NEXT_PUBLIC_GISCUS_REPO,
       repositoryId: process.env.NEXT_PUBLIC_GISCUS_REPOSITORY_ID,
-      category: process.env.NEXT_PUBLIC_GISCUS_CATEGORY,
+      category: 'Announcements', // where new discussions will be created
       categoryId: process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID,
-      mapping: 'pathname', // supported options: pathname, url, title
+      mapping: 'title',
       reactions: '1', // Emoji reactions: 1 = enable / 0 = disable
-      // Send discussion metadata periodically to the parent window: 1 = enable / 0 = disable
       metadata: '0',
+      inputPosition: 'bottom',
       // theme example: light, dark, dark_dimmed, dark_high_contrast
       // transparent_dark, preferred_color_scheme, custom
       theme: 'light',
